@@ -1,5 +1,5 @@
 body {
-  cursor: url('https://i.imgur.com/F40cs4s.png') 16 16, auto;
+  cursor: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/cursor.png') 16 16, auto;
   font-family: sans-serif;
   padding: 20px;
   background-color: #fdfdfd;
@@ -7,7 +7,7 @@ body {
 
 /* Cursor for links */
 a:hover, a:focus {
-  cursor: url('https://i.imgur.com/qtHC2k9.png') 16 16, pointer !important;
+  cursor: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/highlight.png') 16 16, pointer !important;
   color: blue;
   text-decoration: underline;
 }
@@ -17,7 +17,7 @@ a:hover, a:focus {
   position: absolute;
   width: 50px;
   height: 50px;
-  background-image: url('https://i.imgur.com/lUfDlSw.png');
+  background-image: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/fly.png');
   background-size: contain;
   background-repeat: no-repeat;
   cursor: pointer; /* changed from grab */
@@ -27,7 +27,7 @@ a:hover, a:focus {
 
 /* Fly splatted style */
 .fly.splatted {
-  background-image: url('https://i.imgur.com/No3n3hq.png');
+  background-image: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/splat.png');
   width: 60px;
   height: 60px;
   cursor: default;
@@ -35,10 +35,10 @@ a:hover, a:focus {
 
 /* Mallet cursor when hovering over fly */
 .fly:hover {
-  cursor: url('https://i.imgur.com/zE3mXOU.png') 16 16, pointer !important;
+  cursor: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/mallet.png') 16 16, pointer !important;
 }
 
 /* Global cursor for all elements */
 html, body, #container, main, section, * {
-  cursor: url('https://i.imgur.com/F40cs4s.png') 16 16, auto !important;
+  cursor: url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/cursor.png') 16 16, auto !important;
 }

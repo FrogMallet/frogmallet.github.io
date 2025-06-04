@@ -25,3 +25,13 @@ a:hover {
   height: 60px;
   cursor: default;
 }
+
+/* Default cursor everywhere */
+body, html {
+  cursor: url('https://i.imgur.com/F40cs4s.png'), auto;
+}
+
+/* Cursor when hovering links */
+a:hover {
+  cursor: url('https://i.imgur.com/qtHC2k9.png'), pointer;
+}

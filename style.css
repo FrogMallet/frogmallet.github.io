@@ -1,0 +1,21 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: url('cursor.png'), auto;
+  overflow: hidden;
+}
+
+#fly-container img {
+  position: absolute;
+  width: 40px;
+  height: auto;
+  z-index: 9999;
+  cursor: grab;
+  transition: transform 0.2s ease-in-out;
+}
+
+.splat {
+  width: 50px !important;
+  height: auto !important;
+}

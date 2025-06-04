@@ -35,3 +35,11 @@ body, html {
 a:hover {
   cursor: url('https://i.imgur.com/qtHC2k9.png'), pointer;
 }
+
+html, body, #container, #content, main, section {
+  cursor: url('https://i.imgur.com/F40cs4s.png'), auto !important;
+}
+
+a:hover {
+  cursor: url('https://i.imgur.com/qtHC2k9.png'), pointer !important;
+}

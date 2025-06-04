@@ -1,45 +1,41 @@
 body {
-  cursor: url('cursor.png'), auto;
+  cursor: url('https://i.imgur.com/F40cs4s.png') 16 16, auto;
   font-family: sans-serif;
-  text-align: center;
+  padding: 20px;
   background-color: #fdfdfd;
 }
 
-a:hover {
-  cursor: url('highlight.png'), auto;
+/* Cursor for links */
+a:hover, a:focus {
+  cursor: url('https://i.imgur.com/qtHC2k9.png') 16 16, pointer;
+  color: blue;
+  text-decoration: underline;
 }
 
+/* Fly styles */
 .fly {
   position: absolute;
+  top: 150px;
+  left: 150px;
   width: 50px;
   height: 50px;
+  background-image: url('https://i.imgur.com/lUfDlSw.png');
+  background-size: contain;
+  background-repeat: no-repeat;
   cursor: grab;
-  transition: transform 0.2s ease;
   z-index: 1000;
+  transition: transform 0.2s ease;
 }
 
+/* Fly splatted style */
 .fly.splatted {
-  background-image: url('splat.png');
-  background-size: cover;
+  background-image: url('https://i.imgur.com/No3n3hq.png');
   width: 60px;
   height: 60px;
   cursor: default;
 }
 
-/* Default cursor everywhere */
-body, html {
-  cursor: url('https://i.imgur.com/F40cs4s.png'), auto;
-}
-
-/* Cursor when hovering links */
-a:hover {
-  cursor: url('https://i.imgur.com/qtHC2k9.png'), pointer;
-}
-
-html, body, #container, #content, main, section {
-  cursor: url('https://i.imgur.com/F40cs4s.png'), auto !important;
-}
-
-a:hover {
-  cursor: url('https://i.imgur.com/qtHC2k9.png'), pointer !important;
+/* Mallet cursor when hovering over fly */
+.fly:hover {
+  cursor: url('https://i.imgur.com/zE3mXOU.png') 16 16, pointer;
 }

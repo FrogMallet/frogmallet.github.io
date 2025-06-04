@@ -1,67 +1,48 @@
-// Select the body to append flies
-const body = document.body;
+const fly = document.getElementById('fly');
+const splatSound = new Audio('https://drive.google.com/uc?export=download&id=10UnfCuyOtHadWFiFU-PVbO1DdrA-FT9r');
 
-// Preload splat sound
-const splatSound = new Audio('splat.mp3');
+let isDragging = false;
+let dragStartX, dragStartY;
+let flyStartX, flyStartY;
 
-// Function to create a fly
-function createFly() {
-  const fly = document.createElement('img');
-  fly.src = 'fly.png';
-  fly.style.position = 'fixed';
-  fly.style.width = '50px';
-  fly.style.cursor = 'grab';
-  
-  // Random position inside viewport
-  fly.style.top = Math.random() * (window.innerHeight - 50) + 'px';
-  fly.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+fly.addEventListener('mousedown', (e) => {
+  if (fly.classList.contains('splatted')) return;
+  isDragging = false; // reset drag flag on mousedown
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  flyStartX = fly.offsetLeft;
+  flyStartY = fly.offsetTop;
 
-  // Append fly
-  body.appendChild(fly);
-
-  // Drag variables
-  let isDragging = false;
-  let offsetX, offsetY;
-
-  fly.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    offsetX = e.clientX - fly.getBoundingClientRect().left;
-    offsetY = e.clientY - fly.getBoundingClientRect().top;
-    fly.style.cursor = 'grabbing';
-  });
-
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    fly.style.top = (e.clientY - offsetY) + 'px';
-    fly.style.left = (e.clientX - offsetX) + 'px';
-  });
-
-  window.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      fly.style.cursor = 'grab';
+  // Listen for mousemove on document
+  const onMouseMove = (e) => {
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    if (!isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+      isDragging = true;
     }
-  });
+    if (isDragging) {
+      fly.style.left = flyStartX + dx + 'px';
+      fly.style.top = flyStartY + dy + 'px';
+      fly.style.cursor = 'grabbing';
+    }
+  };
 
-  // On click, splat the fly
-  fly.addEventListener('click', () => {
-    splatSound.currentTime = 0;
-    splatSound.play();
-    fly.src = 'splat.png';
-    fly.style.cursor = 'default';
-    
-    // Remove the fly after 1.5 seconds
-    setTimeout(() => {
-      fly.remove();
-    }, 1500);
-  });
-}
+  const onMouseUp = (e) => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    fly.style.cursor = 'grab';
 
-// Spawn a fly every 5-10 seconds randomly
-setInterval(() => {
-  createFly();
-}, 5000 + Math.random() * 5000);
+    if (!isDragging) {
+      // This was a click, not a drag
+      if (!fly.classList.contains('splatted')) {
+        splatSound.currentTime = 0;
+        splatSound.play().catch(err => console.error('Audio play error:', err));
+        fly.classList.add('splatted');
+      }
+    }
+  };
 
-// Optional: spawn first fly immediately
-createFly();
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+});
 

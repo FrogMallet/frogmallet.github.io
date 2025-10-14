@@ -42,6 +42,16 @@
   const bossHPMax = 300;
   let bossHP = bossHPMax;
   let bossHitGateTS = 0;          // throttle stamp for boss hits
+const BOSS_DAMAGE_PER_HIT = 3;
+
+let bossHitCount = 0;            // counts valid hits this fight
+let bossRandomTrigger = 0;       // which hit number will play the random SFX
+let bossRandomPlayed = false;    // ensure it only fires once
+let bossOwPlayed = false;        // ensure the "4th-to-last" SFX fires once
+
+function randInt(min, maxInclusive){
+  return Math.floor(Math.random() * (maxInclusive - min + 1)) + min;
+}
 
   // Countdown bar state (requestAnimationFrame loop)
   let bossCountdownRAF = null;
@@ -174,6 +184,15 @@ function ensureBossUI(){
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
+  // --- Boss SFX ---
+const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');
+const bossRandomSfx = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/cmon%20mah.mp3');
+const bossOwSfx     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/ow%20mah.mp3');
+// Optional volume tweaks
+bossHitSfx.volume = 1.0;
+bossRandomSfx.volume = 1.0;
+bossOwSfx.volume = 1.0;
+
 
   // ---------------- Helpers ----------------
   function setCounterText(txt){ counterNodes.forEach(el=>{ if(el) el.textContent = txt; }); }
@@ -356,6 +375,17 @@ function ensureBossUI(){
 
     updateHealthBar();
 
+    // per-fight SFX state
+bossHitCount = 0;
+bossRandomPlayed = false;
+bossOwPlayed = false;
+
+// choose a random hit index to fire the "cmon mah" line, avoiding the final few hits
+const totalHits = Math.ceil(bossHPMax / BOSS_DAMAGE_PER_HIT); // e.g. 300/3 = 100
+const latestSafe = Math.max(1, totalHits - 5);                // keep last ~5 hits free
+bossRandomTrigger = randInt(2, latestSafe);                   // 2..(totalHits-5)
+
+
     // show overlay, make interactive
     bossWrap.style.display = 'block';
     bossWrap.style.pointerEvents = 'auto';
@@ -390,48 +420,51 @@ function ensureBossUI(){
   }
   window.startBossFight = startBossFight;
 
-  function bossHit(){
-    if (!bossActive) return;
+function bossHit(){
+  if (!bossActive) return;
 
-    const now = performance.now();
-    if (now - bossHitGateTS < 80) return;  // throttle multi-events per tap
-    bossHitGateTS = now;
-// keep the boss locked to center before animating
-Object.assign(bossEl.style, {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%,-50%)'
-});
+  const now = performance.now();
+  if (now - bossHitGateTS < 80) return;
+  bossHitGateTS = now;
 
-    // Start the centered countdown BAR on the first successful hit
-    if (!bossCountdownRAF){
-      const { bossCountdown, bossCountdownFill } = ensureBossUI();
-      const startTs = performance.now();
+  // keep the boss locked to center before animating (you already have this)
+  Object.assign(bossEl.style, {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%,-50%)'
+  });
 
-      if (bossCountdown){ bossCountdown.style.display = 'block'; }
-      if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+  // --- Play "every hit" SFX
+  try { bossHitSfx.currentTime = 0; bossHitSfx.play().catch(()=>{}); } catch(e){}
 
-      function tick(){
-        const elapsed = performance.now() - startTs;
-        const p = Math.max(0, 1 - (elapsed / BOSS_COUNTDOWN_MS)); // 1 -> 0 over 10s
-        if (bossCountdownFill){ bossCountdownFill.style.width = (p*100)+'%'; }
-        if (p <= 0){
-          bossCountdownRAF = null;
-          bossGameOver();
-          return;
-        }
-        bossCountdownRAF = requestAnimationFrame(tick);
-      }
-      bossCountdownRAF = requestAnimationFrame(tick);
-    }
+  // Start the countdown bar on first hit (your existing code runs here)
+  // ...
 
-    // apply damage
-    bossHP = Math.max(0, bossHP - 3);
+  // --- Count this as a valid hit
+  bossHitCount++;
 
-    // hit feedback
-    bossEl.classList.remove('boss-hit'); void bossEl.offsetWidth; bossEl.classList.add('boss-hit');
-    updateHealthBar();
+  // --- Apply damage
+  bossHP = Math.max(0, bossHP - BOSS_DAMAGE_PER_HIT);
+
+  // --- Random one-liner (once per fight on a random hit)
+  if (!bossRandomPlayed && bossHitCount === bossRandomTrigger) {
+    bossRandomPlayed = true;
+    try { bossRandomSfx.currentTime = 0; bossRandomSfx.play().catch(()=>{}); } catch(e){}
+  }
+
+  // --- "4th-to-last" one-liner
+  // remaining hits AFTER this hit:
+  const remainingHits = Math.ceil(bossHP / BOSS_DAMAGE_PER_HIT);
+  // if there will be exactly 3 more hits after this (i.e. we just did the 4th-to-last)
+  if (!bossOwPlayed && remainingHits === 3) {
+    bossOwPlayed = true;
+    try { bossOwSfx.currentTime = 0; bossOwSfx.play().catch(()=>{}); } catch(e){}
+  }
+
+  // --- Your existing hit feedback and kill check
+  bossEl.classList.remove('boss-hit'); void bossEl.offsetWidth; bossEl.classList.add('boss-hit');
+  updateHealthBar();
 
     if (bossHP <= 0){
       if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }

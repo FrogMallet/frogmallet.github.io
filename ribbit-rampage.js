@@ -1,27 +1,8 @@
 /*
   Ribbit Rampage — Live Build (External JS)
   --------------------------------------------------
-  How to use:
-  1) Host this file and include it once on your page, after your theme scripts:
-     <script src="https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/main/ribbit-rampage.js"></script>
-
-  2) Minimal HTML required in the page body:
-     - HUD elements (already in your theme):
-         <div id="fly-counter">Flies Squashed: 0</div>
-         <div id="rampage-timer">1:00</div>
-         <img id="golden-frog" ... id="golden-frog" />
-     - Boss overlay (if you don't have it, this script will create one):
-         <div id="boss-fight" aria-hidden="true">
-           <div id="boss-health"><div id="boss-health-fill"></div></div>
-           <img id="boss-fly" src="(your BossFly.png)" alt="Boss Fly"/>
-         </div>
-
-  3) This script will ensure a centered wrapper and a countdown BAR above the boss
-     (created if missing) that shrinks over 10 seconds after the FIRST hit.
-
-  Hotkeys:
-    - K: splat all current flies (debug/party mode)
-    - B: start boss fight immediately
+  Include once, after theme scripts:
+  <script src="https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/main/ribbit-rampage.js"></script>
 */
 
 (() => {
@@ -41,21 +22,22 @@
   let bossActive = false;
   const bossHPMax = 300;
   let bossHP = bossHPMax;
-  let bossHitGateTS = 0;          // throttle stamp for boss hits
-const BOSS_DAMAGE_PER_HIT = 3;
+  let bossHitGateTS = 0;
 
-let bossHitCount = 0;            // counts valid hits this fight
-let bossRandomTrigger = 0;       // which hit number will play the random SFX
-let bossRandomPlayed = false;    // ensure it only fires once
-let bossOwPlayed = false;        // ensure the "4th-to-last" SFX fires once
+  const BOSS_DAMAGE_PER_HIT = 3;
 
-function randInt(min, maxInclusive){
-  return Math.floor(Math.random() * (maxInclusive - min + 1)) + min;
-}
+  let bossHitCount = 0;         // counts valid hits this fight
+  let bossRandomTrigger = 0;    // which hit number will play the random SFX
+  let bossRandomPlayed = false; // ensure random SFX only fires once
+  let bossOwPlayed = false;     // ensure "4th-to-last" SFX only fires once
 
-  // Countdown bar state (requestAnimationFrame loop)
+  function randInt(min, maxInclusive){
+    return Math.floor(Math.random() * (maxInclusive - min + 1)) + min;
+  }
+
+  // Countdown BAR via RAF
   let bossCountdownRAF = null;
-  const BOSS_COUNTDOWN_MS = 12000; // 10s after first hit
+  const BOSS_COUNTDOWN_MS = 12000; // 12s after FIRST hit
 
   const FROG_DELAY_MS = 3200;
 
@@ -65,7 +47,6 @@ function randInt(min, maxInclusive){
   const timerEl   = document.getElementById('rampage-timer');
   const frogEl    = document.getElementById('golden-frog');
 
-  // Boss scaffold (created/normalized below)
   let bossWrap  = document.getElementById('boss-fight');
   let bossEl    = document.getElementById('boss-fly');
   let healthFill= document.getElementById('boss-health-fill');
@@ -76,157 +57,146 @@ function randInt(min, maxInclusive){
   const clamp = (v,min,max)=> Math.min(Math.max(v,min),max);
   const hsl   = (h,s,l)=>`hsl(${h} ${s}% ${l}%)`;
 
-  // ---------------- Ensure Boss UI exists & centered wrapper with countdown bar ----------------
-// ---------------- Ensure Boss UI exists & align countdown to health bar ----------------
-function ensureBossUI(){
-  // Create boss overlay if missing
-  if (!bossWrap){
-    bossWrap = document.createElement('div');
-    bossWrap.id = 'boss-fight';
-    bossWrap.setAttribute('aria-hidden','true');
-    Object.assign(bossWrap.style,{display:'none',position:'fixed',inset:'0',zIndex:'10004',pointerEvents:'none'});
-    document.body.appendChild(bossWrap);
+  // ---------------- Ensure Boss UI exists & align countdown to health bar ----------------
+  function ensureBossUI(){
+    // Create boss overlay if missing
+    if (!bossWrap){
+      bossWrap = document.createElement('div');
+      bossWrap.id = 'boss-fight';
+      bossWrap.setAttribute('aria-hidden','true');
+      Object.assign(bossWrap.style,{display:'none',position:'fixed',inset:'0',zIndex:'10004',pointerEvents:'none'});
+      document.body.appendChild(bossWrap);
+    }
+
+    // Health bar (top centered)
+    if (!healthFill){
+      const hb = document.createElement('div');
+      hb.id = 'boss-health';
+      Object.assign(hb.style,{
+        position:'absolute',
+        top:'20px',
+        left:'50%',
+        transform:'translateX(-50%)',
+        width:'min(90vw,600px)',
+        height:'22px',
+        border:'2px solid #000',
+        background:'#222',
+        borderRadius:'12px',
+        overflow:'hidden',
+        zIndex:'10005'
+      });
+      const fill = document.createElement('div');
+      fill.id = 'boss-health-fill';
+      Object.assign(fill.style,{height:'100%',width:'100%',background:hsl(120,100,40)});
+      hb.appendChild(fill);
+      bossWrap.appendChild(hb);
+      healthFill = fill;
+    }
+
+    // Boss fly (centered)
+    if (!bossEl){
+      bossEl = document.createElement('img');
+      bossEl.id = 'boss-fly';
+      bossEl.alt = 'Boss Fly';
+      bossEl.src = 'https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/ae7427698f32ed7b44dc617a4df7a37c0e9ade48/BossFly.png';
+      Object.assign(bossEl.style,{
+        position:'absolute',
+        top:'50%',
+        left:'50%',
+        transform:'translate(-50%,-50%)',
+        width:'min(60vw,450px)',
+        userSelect:'none',
+        pointerEvents:'auto'
+      });
+      bossWrap.appendChild(bossEl);
+    }
+
+    // Countdown bar: same width/center as health bar, just below it
+    let bossCountdown = document.getElementById('boss-countdown');
+    let bossCountdownFill = document.getElementById('boss-countdown-fill');
+
+    if (!bossCountdown){
+      bossCountdown = document.createElement('div');
+      bossCountdown.id = 'boss-countdown';
+      Object.assign(bossCountdown.style,{
+        position:'absolute',
+        top:'45px', // 20 + 22 + ~3px gap
+        left:'50%',
+        transform:'translateX(-50%)',
+        width:'min(90vw,600px)',
+        height:'14px',
+        border:'2px solid #000',
+        background:'#222',
+        borderRadius:'10px',
+        overflow:'hidden',
+        display:'none',
+        opacity:'0',
+        zIndex:'10005',
+        boxShadow:'0 0 10px rgba(0,0,0,.6) inset',
+        transition:'opacity .2s ease'
+      });
+      bossWrap.appendChild(bossCountdown);
+
+      bossCountdownFill = document.createElement('div');
+      bossCountdownFill.id = 'boss-countdown-fill';
+      Object.assign(bossCountdownFill.style,{
+        height:'100%',
+        width:'100%',
+        background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
+      });
+      bossCountdown.appendChild(bossCountdownFill);
+    } else if (!bossCountdownFill){
+      bossCountdownFill = document.createElement('div');
+      bossCountdownFill.id = 'boss-countdown-fill';
+      Object.assign(bossCountdownFill.style,{
+        height:'100%',
+        width:'100%',
+        background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
+      });
+      bossCountdown.appendChild(bossCountdownFill);
+    }
+
+    return { bossCountdown, bossCountdownFill };
   }
-
-  // Health bar (top centered)
-  if (!healthFill){
-    const hb = document.createElement('div');
-    hb.id = 'boss-health';
-    Object.assign(hb.style,{
-      position:'absolute',
-      top:'20px',
-      left:'50%',
-      transform:'translateX(-50%)',
-      width:'min(90vw,600px)',
-      height:'22px',
-      border:'2px solid #000',
-      background:'#222',
-      borderRadius:'12px',
-      overflow:'hidden',
-      zIndex:'10005'
-    });
-    const fill = document.createElement('div');
-    fill.id = 'boss-health-fill';
-    Object.assign(fill.style,{height:'100%',width:'100%',background:hsl(120,100,40)});
-    hb.appendChild(fill);
-    bossWrap.appendChild(hb);
-    healthFill = fill;
-  }
-
-  // Boss fly (kept centered; can live in a simple center wrapper)
-  if (!bossEl){
-    bossEl = document.createElement('img');
-    bossEl.id = 'boss-fly';
-    bossEl.alt = 'Boss Fly';
-    bossEl.src = 'https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/ae7427698f32ed7b44dc617a4df7a37c0e9ade48/BossFly.png';
-    Object.assign(bossEl.style,{
-      position:'absolute',
-      top:'50%',
-      left:'50%',
-      transform:'translate(-50%,-50%)',
-      width:'min(60vw,450px)',
-      userSelect:'none',
-      pointerEvents:'auto'
-    });
-    bossWrap.appendChild(bossEl);
-  }
-
-  // Countdown bar: ABSOLUTE, same width & centering as health bar, below it
-  let bossCountdown = document.getElementById('boss-countdown');
-  let bossCountdownFill = document.getElementById('boss-countdown-fill');
-
-  if (!bossCountdown){
-    bossCountdown = document.createElement('div');
-    bossCountdown.id = 'boss-countdown';
-    Object.assign(bossCountdown.style,{
-      position:'absolute',
-      top:'45px',                     // just under #boss-health (which is at 20px + 22px height + ~10px gap)
-      left:'50%',
-      transform:'translateX(-50%)',
-      width:'min(90vw,600px)',        // EXACT same width rule as #boss-health
-      height:'14px',
-      border:'2px solid #000',
-      background:'#222',
-      borderRadius:'10px',
-      overflow:'hidden',
-      display:'none',
-      zIndex:'10005',
-      boxShadow:'0 0 10px rgba(0,0,0,.6) inset'
-    });
-    bossWrap.appendChild(bossCountdown);
-
-    bossCountdownFill = document.createElement('div');
-    bossCountdownFill.id = 'boss-countdown-fill';
-    Object.assign(bossCountdownFill.style,{
-      height:'100%',
-      width:'100%',
-      background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
-      transition:'width .08s linear'
-    });
-    bossCountdown.appendChild(bossCountdownFill);
-  } else if (!bossCountdownFill){
-    bossCountdownFill = document.createElement('div');
-    bossCountdownFill.id = 'boss-countdown-fill';
-    Object.assign(bossCountdownFill.style,{
-      height:'100%',
-      width:'100%',
-      background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
-      transition:'width .08s linear'
-    });
-    bossCountdown.appendChild(bossCountdownFill);
-  }
-
-  return { bossCountdown, bossCountdownFill };
-}
-
 
   // ---------------- Audio ----------------
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
-  // --- Boss SFX ---
-const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');
-const bossRandomSfx = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/cmon%20mah.mp3');
-const bossOwSfx     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/ow%20mah.mp3');
-// Optional volume tweaks
-bossHitSfx.volume = 1.0;
-bossRandomSfx.volume = 1.0;
-bossOwSfx.volume = 1.0;
-  // ---- ONE-TIME AUDIO PRIMER (fixes iOS/Chrome autoplay lock) ----
-function primeAudio(a){
-  try {
-    a.muted = true;        // ensure no audible blip while priming
-    const p = a.play();
-    if (p && typeof p.then === 'function') {
-      p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
-    } else {
-      a.pause(); a.currentTime = 0; a.muted = false;
-    }
-  } catch(e){ a.muted = false; }
-}
 
-let __rrAudioPrimed = false;
-function unlockAllAudioOnce(){
-  if (__rrAudioPrimed) return;
-  __rrAudioPrimed = true;
+  // Boss SFX
+  const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');
+  const bossRandomSfx = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/cmon%20mah.mp3');
+  const bossOwSfx     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/ow%20mah.mp3');
+  bossHitSfx.volume = 1.0;
+  bossRandomSfx.volume = 1.0;
+  bossOwSfx.volume = 1.0;
 
-  [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx].forEach(a => {
-    a.preload = 'auto';
-    primeAudio(a);
+  // One-time audio primer for iOS/Chrome autoplay
+  function primeAudio(a){
+    try {
+      a.muted = true;
+      const p = a.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
+      } else { a.pause(); a.currentTime = 0; a.muted = false; }
+    } catch(e){ a.muted = false; }
+  }
+  let __rrAudioPrimed = false;
+  function unlockAllAudioOnce(){
+    if (__rrAudioPrimed) return;
+    __rrAudioPrimed = true;
+    [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx].forEach(a => {
+      a.preload = 'auto'; primeAudio(a);
+    });
+  }
+  ['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
+    window.addEventListener(ev, unlockAllAudioOnce, { once:true, passive:true, capture:true });
   });
-}
-
-// First gesture anywhere unlocks audio on all browsers (incl. iOS)
-['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
-  window.addEventListener(ev, unlockAllAudioOnce, { once:true, passive:true, capture:true });
-});
-
-
 
   // ---------------- Helpers ----------------
   function setCounterText(txt){ counterNodes.forEach(el=>{ if(el) el.textContent = txt; }); }
   function updateCounter(){ setCounterText(`Flies Squashed: ${flyKillCount}`); }
-
   function showGoldenFrogDelayed(){
     setTimeout(()=>{
       const el = document.getElementById('golden-frog');
@@ -235,8 +205,6 @@ function unlockAllAudioOnce(){
       el.style.transform = 'translate(-50%,-50%) scale(1.1)';
     }, FROG_DELAY_MS);
   }
-
-  // Enforce exactly one live fly until first kill
   let enforceObserver = null;
   function pruneToSingleFly(){
     if (postFirstKill) return;
@@ -249,7 +217,6 @@ function unlockAllAudioOnce(){
     enforceObserver = new MutationObserver(()=> pruneToSingleFly());
     enforceObserver.observe(document.body, {childList:true, subtree:true});
   }
-
   function formatTime(s){ const m = Math.floor(s/60), ss = String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
 
   // ---------------- Rampage Timer ----------------
@@ -268,7 +235,6 @@ function unlockAllAudioOnce(){
       }
     }, 1000);
   }
-
   function handleRampageTimeout(){
     if (bossActive) return;
     document.querySelectorAll('.fly:not(.splatted), .rr-fly:not(.splatted)').forEach(f=>{
@@ -279,12 +245,10 @@ function unlockAllAudioOnce(){
       f.style.opacity='0';
       setTimeout(()=>f.remove(),2000);
     });
-    // Soft reset
     rampageActive=false; spawnRateMultiplier=1; spawnAllowed=true; postFirstKill=false; flyKillCount=0;
     setCounterText('Flies Squashed: 0'); counterNodes.forEach(el=>{ if(el) el.style.display='none'; });
     setTimeout(()=> createFly(), 1200);
   }
-
   function showBanner(kind){
     const img = document.createElement('img');
     img.src = (kind==='DECIMATED')
@@ -307,7 +271,6 @@ function unlockAllAudioOnce(){
     if (prev === 0) counterNodes.forEach(el => { if(el) el.style.display='block'; });
     handleMilestones(prev);
   }
-
   function handleMilestones(prev){
     if(prev<1 && flyKillCount>=1 && flyKillCount<10 && !postFirstKill){
       postFirstKill = true;
@@ -358,7 +321,6 @@ function unlockAllAudioOnce(){
       ev.stopPropagation();
     }, true);
   }
-
   function spawnFlies(){
     if (!postFirstKill) return;
     if (!spawnAllowed || bossActive) return;
@@ -369,7 +331,7 @@ function unlockAllAudioOnce(){
     setTimeout(spawnFlies, base*spawnRateMultiplier);
   }
 
-  // ---------------- Boss Logic (HP + Centered Countdown BAR) ----------------
+  // ---------------- Boss Logic ----------------
   function updateHealthBar(){
     const p = Math.max(bossHP,0) / bossHPMax;
     if (healthFill) {
@@ -379,9 +341,7 @@ function unlockAllAudioOnce(){
   }
 
   function startBossFight(){
-    ensureBossUI(); // make sure structure exists
     const { bossCountdown, bossCountdownFill } = ensureBossUI();
-
     if (bossActive) return;
     bossActive = true;
     spawnAllowed = false;
@@ -397,23 +357,20 @@ function unlockAllAudioOnce(){
     bossHP = bossHPMax;
     bossHitGateTS = 0;
 
+    // per-fight SFX state
+    bossHitCount = 0;
+    bossRandomPlayed = false;
+    bossOwPlayed = false;
+    const totalHits = Math.ceil(bossHPMax / BOSS_DAMAGE_PER_HIT); // 300/3 = 100
+    const latestSafe = Math.max(1, totalHits - 5);
+    bossRandomTrigger = randInt(2, latestSafe);
+
     // Cancel any previous countdown animation and reset bar
     if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }
-    if (bossCountdown){ bossCountdown.style.display = 'none'; }
+    if (bossCountdown){ bossCountdown.style.display = 'none'; bossCountdown.style.opacity = '0'; }
     if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
 
     updateHealthBar();
-
-    // per-fight SFX state
-bossHitCount = 0;
-bossRandomPlayed = false;
-bossOwPlayed = false;
-
-// choose a random hit index to fire the "cmon mah" line, avoiding the final few hits
-const totalHits = Math.ceil(bossHPMax / BOSS_DAMAGE_PER_HIT); // e.g. 300/3 = 100
-const latestSafe = Math.max(1, totalHits - 5);                // keep last ~5 hits free
-bossRandomTrigger = randInt(2, latestSafe);                   // 2..(totalHits-5)
-
 
     // show overlay, make interactive
     bossWrap.style.display = 'block';
@@ -430,12 +387,9 @@ bossRandomTrigger = randInt(2, latestSafe);                   // 2..(totalHits-5
       old.parentNode.replaceChild(fresh, old);
       bossEl = fresh;
       Object.assign(bossEl.style, {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%,-50%)',
-  pointerEvents: 'auto'
-});
+        position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
+        pointerEvents:'auto'
+      });
     }
     bossEl.setAttribute('draggable','false');
     bossEl.style.pointerEvents = 'auto';
@@ -449,78 +403,173 @@ bossRandomTrigger = randInt(2, latestSafe);                   // 2..(totalHits-5
   }
   window.startBossFight = startBossFight;
 
-function bossHit(){
-  if (!bossActive) return;
+  function bossHit(){
+    if (!bossActive) return;
 
-  const now = performance.now();
-  if (now - bossHitGateTS < 80) return;
-  bossHitGateTS = now;
+    const now = performance.now();
+    if (now - bossHitGateTS < 80) return;  // throttle
+    bossHitGateTS = now;
 
-  // keep the boss locked to center before animating (you already have this)
-  Object.assign(bossEl.style, {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%,-50%)'
-  });
+    // keep the boss locked to center
+    Object.assign(bossEl.style, {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%,-50%)'
+    });
 
-  // --- Play "every hit" SFX
-  try { bossHitSfx.currentTime = 0; bossHitSfx.play().catch(()=>{}); } catch(e){}
+    // Every-hit SFX
+    try { bossHitSfx.currentTime = 0; bossHitSfx.play().catch(()=>{}); } catch(e){}
 
-  // Start the countdown bar on first hit (your existing code runs here)
-  // ...
+    // Start the countdown BAR on the very first successful hit
+    if (!bossCountdownRAF){
+      const { bossCountdown, bossCountdownFill } = ensureBossUI();
 
-  // --- Count this as a valid hit
-  // --- Start the countdown BAR on the very first successful hit
-if (!bossCountdownRAF){
-  const { bossCountdown, bossCountdownFill } = ensureBossUI();
-  const startTs = performance.now();
+      // show the bar full, then shrink
+      if (bossCountdown){
+        bossCountdown.style.display = 'block';
+        // force style flush before setting opacity for smooth fade
+        void bossCountdown.offsetWidth;
+        bossCountdown.style.opacity = '1';
+      }
+      if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
 
-  if (bossCountdown){ bossCountdown.style.display = 'block'; }
-  if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+      const startTs = performance.now();
 
-  function tick(){
-    const elapsed = performance.now() - startTs;
-    const p = Math.max(0, 1 - (elapsed / BOSS_COUNTDOWN_MS)); // 1 -> 0 over the duration
-    if (bossCountdownFill){ bossCountdownFill.style.width = (p*100)+'%'; }
-
-    if (p <= 0){
-      bossCountdownRAF = null;
-      bossGameOver();
-      return;
+      function tick(){
+        const elapsed = performance.now() - startTs;
+        const p = Math.max(0, 1 - (elapsed / BOSS_COUNTDOWN_MS)); // 1 -> 0 over 12s
+        if (bossCountdownFill) bossCountdownFill.style.width = (p*100)+'%';
+        if (p <= 0){
+          bossCountdownRAF = null;
+          bossGameOver();
+          return;
+        }
+        bossCountdownRAF = requestAnimationFrame(tick);
+      }
+      bossCountdownRAF = requestAnimationFrame(tick);
     }
-    bossCountdownRAF = requestAnimationFrame(tick);
-  }
-  bossCountdownRAF = requestAnimationFrame(tick);
-}
 
-  bossHitCount++;
+    // Count hit and apply damage
+    bossHitCount++;
+    bossHP = Math.max(0, bossHP - BOSS_DAMAGE_PER_HIT);
 
-  // --- Apply damage
-  bossHP = Math.max(0, bossHP - BOSS_DAMAGE_PER_HIT);
+    // Random one-liner once
+    if (!bossRandomPlayed && bossHitCount === bossRandomTrigger) {
+      bossRandomPlayed = true;
+      try { bossRandomSfx.currentTime = 0; bossRandomSfx.play().catch(()=>{}); } catch(e){}
+    }
 
-  // --- Random one-liner (once per fight on a random hit)
-  if (!bossRandomPlayed && bossHitCount === bossRandomTrigger) {
-    bossRandomPlayed = true;
-    try { bossRandomSfx.currentTime = 0; bossRandomSfx.play().catch(()=>{}); } catch(e){}
-  }
+    // "4th-to-last" one-liner (i.e., exactly 3 more hits remain after this one)
+    const remainingHits = Math.ceil(bossHP / BOSS_DAMAGE_PER_HIT);
+    if (!bossOwPlayed && remainingHits === 3) {
+      bossOwPlayed = true;
+      try { bossOwSfx.currentTime = 0; bossOwSfx.play().catch(()=>{}); } catch(e){}
+    }
 
-  // --- "4th-to-last" one-liner
-  // remaining hits AFTER this hit:
-  const remainingHits = Math.ceil(bossHP / BOSS_DAMAGE_PER_HIT);
-  // if there will be exactly 3 more hits after this (i.e. we just did the 4th-to-last)
-  if (!bossOwPlayed && remainingHits === 3) {
-    bossOwPlayed = true;
-    try { bossOwSfx.currentTime = 0; bossOwSfx.play().catch(()=>{}); } catch(e){}
-  }
-
-  // --- Your existing hit feedback and kill check
-  bossEl.classList.remove('boss-hit'); void bossEl.offsetWidth; bossEl.classList.add('boss-hit');
-  updateHealthBar();
+    // Hit feedback + check kill
+    bossEl.classList.remove('boss-hit'); void bossEl.offsetWidth; bossEl.classList.add('boss-hit');
+    updateHealthBar();
 
     if (bossHP <= 0){
       if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }
       const { bossCountdown, bossCountdownFill } = ensureBossUI();
+      if (bossCountdown){ bossCountdown.style.display = 'none'; bossCountdown.style.opacity = '0'; }
+      if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+      endBossFight();
+    }
+  }
+
+  function endBossFight(){
+    bossActive=false;
+    if (bossWrap) bossWrap.style.display='none';
+    showBanner('DECIMATED');
+    showGoldenFrogDelayed();
+    spawnAllowed=false;
+  }
+
+  function bossGameOver(){
+    bossActive = false;
+
+    // stop/hide countdown bar
+    if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }
+    const { bossCountdown, bossCountdownFill } = ensureBossUI();
+    if (bossCountdown){ bossCountdown.style.display = 'none'; bossCountdown.style.opacity = '0'; }
+    if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+
+    if (bossWrap){
+      bossWrap.style.display='none';
+      bossWrap.setAttribute('aria-hidden','true');
+      bossWrap.style.pointerEvents='none';
+    }
+    const img=document.createElement('img');
+    img.src='https://github.com/FrogMallet/frogmallet.github.io/blob/main/GAME%20OVER.png?raw=true';
+    Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
+    document.body.appendChild(img);
+    const st=document.createElement('style'); st.textContent='@keyframes fadeOut{0%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}';
+    document.head.appendChild(st);
+    setTimeout(()=> img.remove(), 3000);
+    spawnAllowed = false; // keep fail state until reload
+    console.log('[RR] GAME OVER — boss timer expired');
+  }
+
+  // Prevent the golden frog from hijacking clicks
+  if (frogEl) frogEl.addEventListener('click', e=> e.preventDefault());
+
+  // ---------------- Hotkeys ----------------
+  window.addEventListener('keydown', e=>{
+    const key = (e.key||'').toLowerCase();
+    if (key !== 'k') return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    const flies = Array.from(document.querySelectorAll('.fly:not(.splatted), .rr-fly:not(.splatted)'));
+    if(!flies.length) return;
+    try{ splatSound.currentTime=0; splatSound.play().catch(()=>{});}catch(_){ }
+    flies.forEach(f=>{
+      if (f.dataset.splatted==='1') return;
+      f.classList.add('splatted'); f.dataset.splatted='1';
+      f.style.backgroundImage = "url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/splat.png')";
+      const size = isMobile?40:60;
+      f.style.width=size+'px'; f.style.height=size+'px';
+      f.style.cursor='default'; f.style.transform='rotate(0deg)';
+      setTimeout(()=> f.remove(),150);
+    });
+    registerKill(flies.length);
+  }, true);
+
+  // Delegated click for any .fly/.rr-fly
+  window.addEventListener('click', (e)=>{
+    const t = e.target.closest('.fly, .rr-fly');
+    if(!t) return;
+    if(t.classList.contains('splatted') || t.dataset.splatted==='1') return;
+    try{ splatSound.currentTime=0; splatSound.play().catch(()=>{});}catch(_){ }
+    t.classList.add('splatted'); t.dataset.splatted='1';
+    const size = isMobile?40:60;
+    t.style.backgroundImage = "url('https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/refs/heads/main/splat.png')";
+    t.style.width=size+'px'; t.style.height=size+'px';
+    t.style.cursor='default'; t.style.transform='rotate(0deg)';
+    setTimeout(()=> t.remove(), 3000);
+    registerKill(1);
+  }, true);
+
+  // B = start boss fight (debounced)
+  let __rrLastB = 0;
+  window.addEventListener('keydown', function (e) {
+    if (((e.key || '').toLowerCase()) !== 'b') return;
+    const now = Date.now();
+    if (now - __rrLastB < 400) return;
+    __rrLastB = now;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    if (typeof window.startBossFight === 'function') window.startBossFight();
+    else try { startBossFight(); } catch(_) {}
+  }, true);
+
+  // ---------------- Boot ----------------
+  setCounterText('Flies Squashed: 0');
+  if (bossWrap) bossWrap.style.pointerEvents = 'none';
+  enforceOneFlyUntilFirstKill();
+  createFly();
+  pruneToSingleFly();
+})();
       if (bossCountdown){ bossCountdown.style.display = 'none'; }
       if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
       endBossFight();

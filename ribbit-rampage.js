@@ -67,77 +67,108 @@
   const hsl   = (h,s,l)=>`hsl(${h} ${s}% ${l}%)`;
 
   // ---------------- Ensure Boss UI exists & centered wrapper with countdown bar ----------------
-  function ensureBossUI(){
-    // Create boss overlay if missing
-    if (!bossWrap){
-      bossWrap = document.createElement('div');
-      bossWrap.id = 'boss-fight';
-      bossWrap.setAttribute('aria-hidden','true');
-      Object.assign(bossWrap.style,{display:'none',position:'fixed',inset:'0',zIndex:'10004',pointerEvents:'none'});
-      document.body.appendChild(bossWrap);
-    }
-
-    // Health bar if missing
-    if (!healthFill){
-      const hb = document.createElement('div');
-      hb.id = 'boss-health';
-      Object.assign(hb.style,{position:'absolute',top:'20px',left:'50%',transform:'translateX(-50%)',width:'min(90vw,600px)',height:'22px',border:'2px solid #000',background:'#222',borderRadius:'12px',overflow:'hidden',zIndex:'10005'});
-      const fill = document.createElement('div');
-      fill.id = 'boss-health-fill';
-      Object.assign(fill.style,{height:'100%',width:'100%',background:hsl(120,100,40)});
-      hb.appendChild(fill);
-      bossWrap.appendChild(hb);
-      healthFill = fill;
-    }
-
-    // Boss fly if missing
-    if (!bossEl){
-      bossEl = document.createElement('img');
-      bossEl.id = 'boss-fly';
-      bossEl.alt = 'Boss Fly';
-      bossEl.src = 'https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/ae7427698f32ed7b44dc617a4df7a37c0e9ade48/BossFly.png';
-      Object.assign(bossEl.style,{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(60vw,450px)',userSelect:'none',pointerEvents:'auto'});
-      bossWrap.appendChild(bossEl);
-    }
-
-    // Center wrapper above the fly (creates if missing, and moves fly inside)
-    let bossCenter = document.getElementById('boss-center');
-    if (!bossCenter){
-      bossCenter = document.createElement('div');
-      bossCenter.id = 'boss-center';
-      Object.assign(bossCenter.style,{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',display:'flex',flexDirection:'column',alignItems:'center',gap:'14px',pointerEvents:'none',width:'min(60vw,450px)'});
-      bossWrap.appendChild(bossCenter);
-    }
-
-    // Countdown bar (container + fill)
-    let bossCountdown = document.getElementById('boss-countdown');
-    let bossCountdownFill = document.getElementById('boss-countdown-fill');
-    if (!bossCountdown){
-      bossCountdown = document.createElement('div');
-      bossCountdown.id = 'boss-countdown';
-      Object.assign(bossCountdown.style,{width:'100%',height:'16px',border:'2px solid #000',background:'#222',borderRadius:'10px',overflow:'hidden',display:'none',boxShadow:'0 0 10px rgba(0,0,0,.6) inset'});
-      bossCenter.appendChild(bossCountdown);
-
-      bossCountdownFill = document.createElement('div');
-      bossCountdownFill.id = 'boss-countdown-fill';
-      Object.assign(bossCountdownFill.style,{height:'100%',width:'100%',background:'linear-gradient(90deg, #ff3b3b, #ffd400)',transition:'width .08s linear'});
-      bossCountdown.appendChild(bossCountdownFill);
-    } else if (!bossCountdownFill) {
-      bossCountdownFill = document.createElement('div');
-      bossCountdownFill.id = 'boss-countdown-fill';
-      Object.assign(bossCountdownFill.style,{height:'100%',width:'100%',background:'linear-gradient(90deg, #ff3b3b, #ffd400)',transition:'width .08s linear'});
-      bossCountdown.appendChild(bossCountdownFill);
-    }
-
-    // Ensure the fly is inside the center wrapper and clickable
-    if (bossEl.parentElement !== bossCenter){
-      bossCenter.appendChild(bossEl);
-      Object.assign(bossEl.style,{position:'relative',top:'auto',left:'auto',transform:'none',width:'100%',pointerEvents:'auto'});
-    }
-
-    // Expose elements for other functions
-    return { bossCenter, bossCountdown, bossCountdownFill };
+// ---------------- Ensure Boss UI exists & align countdown to health bar ----------------
+function ensureBossUI(){
+  // Create boss overlay if missing
+  if (!bossWrap){
+    bossWrap = document.createElement('div');
+    bossWrap.id = 'boss-fight';
+    bossWrap.setAttribute('aria-hidden','true');
+    Object.assign(bossWrap.style,{display:'none',position:'fixed',inset:'0',zIndex:'10004',pointerEvents:'none'});
+    document.body.appendChild(bossWrap);
   }
+
+  // Health bar (top centered)
+  if (!healthFill){
+    const hb = document.createElement('div');
+    hb.id = 'boss-health';
+    Object.assign(hb.style,{
+      position:'absolute',
+      top:'20px',
+      left:'50%',
+      transform:'translateX(-50%)',
+      width:'min(90vw,600px)',
+      height:'22px',
+      border:'2px solid #000',
+      background:'#222',
+      borderRadius:'12px',
+      overflow:'hidden',
+      zIndex:'10005'
+    });
+    const fill = document.createElement('div');
+    fill.id = 'boss-health-fill';
+    Object.assign(fill.style,{height:'100%',width:'100%',background:hsl(120,100,40)});
+    hb.appendChild(fill);
+    bossWrap.appendChild(hb);
+    healthFill = fill;
+  }
+
+  // Boss fly (kept centered; can live in a simple center wrapper)
+  if (!bossEl){
+    bossEl = document.createElement('img');
+    bossEl.id = 'boss-fly';
+    bossEl.alt = 'Boss Fly';
+    bossEl.src = 'https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/ae7427698f32ed7b44dc617a4df7a37c0e9ade48/BossFly.png';
+    Object.assign(bossEl.style,{
+      position:'absolute',
+      top:'50%',
+      left:'50%',
+      transform:'translate(-50%,-50%)',
+      width:'min(60vw,450px)',
+      userSelect:'none',
+      pointerEvents:'auto'
+    });
+    bossWrap.appendChild(bossEl);
+  }
+
+  // Countdown bar: ABSOLUTE, same width & centering as health bar, below it
+  let bossCountdown = document.getElementById('boss-countdown');
+  let bossCountdownFill = document.getElementById('boss-countdown-fill');
+
+  if (!bossCountdown){
+    bossCountdown = document.createElement('div');
+    bossCountdown.id = 'boss-countdown';
+    Object.assign(bossCountdown.style,{
+      position:'absolute',
+      top:'52px',                     // just under #boss-health (which is at 20px + 22px height + ~10px gap)
+      left:'50%',
+      transform:'translateX(-50%)',
+      width:'min(90vw,600px)',        // EXACT same width rule as #boss-health
+      height:'14px',
+      border:'2px solid #000',
+      background:'#222',
+      borderRadius:'10px',
+      overflow:'hidden',
+      display:'none',
+      zIndex:'10005',
+      boxShadow:'0 0 10px rgba(0,0,0,.6) inset'
+    });
+    bossWrap.appendChild(bossCountdown);
+
+    bossCountdownFill = document.createElement('div');
+    bossCountdownFill.id = 'boss-countdown-fill';
+    Object.assign(bossCountdownFill.style,{
+      height:'100%',
+      width:'100%',
+      background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
+      transition:'width .08s linear'
+    });
+    bossCountdown.appendChild(bossCountdownFill);
+  } else if (!bossCountdownFill){
+    bossCountdownFill = document.createElement('div');
+    bossCountdownFill.id = 'boss-countdown-fill';
+    Object.assign(bossCountdownFill.style,{
+      height:'100%',
+      width:'100%',
+      background:'linear-gradient(90deg, #ff3b3b, #ffd400)',
+      transition:'width .08s linear'
+    });
+    bossCountdown.appendChild(bossCountdownFill);
+  }
+
+  return { bossCountdown, bossCountdownFill };
+}
+
 
   // ---------------- Audio ----------------
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');

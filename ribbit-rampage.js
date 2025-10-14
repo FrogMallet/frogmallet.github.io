@@ -3,7 +3,7 @@
   --------------------------------------------------
   How to use:
   1) Host this file and include it once on your page, after your theme scripts:
-     <script src="/path/to/ribbit-rampage.js"></script>
+     <script src="https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/main/ribbit-rampage.js"></script>
 
   2) Minimal HTML required in the page body:
      - HUD elements (already in your theme):

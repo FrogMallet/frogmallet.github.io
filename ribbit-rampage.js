@@ -164,6 +164,7 @@
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
   const gameOverSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Game%20Over.mp3');
+  gameOverSound.volume = 1.0;
 
   // Boss SFX
   const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');
@@ -184,17 +185,19 @@
     } catch(e){ a.muted = false; }
   }
   let __rrAudioPrimed = false;
-  function unlockAllAudioOnce(){
-    if (__rrAudioPrimed) return;
-    __rrAudioPrimed = true;
-   [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx, gameOverSound]
-  .forEach(a => { a.preload = 'auto'; primeAudio(a); });
-    });
-  }
-  ['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
-    window.addEventListener(ev, unlockAllAudioOnce, { once:true, passive:true, capture:true });
-  });
+function unlockAllAudioOnce(){
+  if (__rrAudioPrimed) return;
+  __rrAudioPrimed = true;
 
+  [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx, gameOverSound]
+    .forEach(a => { a.preload = 'auto'; primeAudio(a); });
+
+  // (optional) debug
+  // console.log('[RR] Audio primed');
+}
+['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
+  window.addEventListener(ev, unlockAllAudioOnce, { once:true, passive:true, capture:true });
+});
   // ---------------- Helpers ----------------
   function setCounterText(txt){ counterNodes.forEach(el=>{ if(el) el.textContent = txt; }); }
   function updateCounter(){ setCounterText(`Flies Squashed: ${flyKillCount}`); }

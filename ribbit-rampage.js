@@ -163,8 +163,10 @@
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
-  const gameOverSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Game%20Over.mp3');
-  gameOverSound.volume = 1.0;
+ const gameOverSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Game%20Over.mp3');
+gameOverSound.volume = 1.0;
+gameOverSound.crossOrigin = 'anonymous';
+
 
   // Boss SFX
   const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');

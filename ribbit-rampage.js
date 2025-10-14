@@ -163,6 +163,7 @@
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
+  const gameOverSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Game%20Over.mp3');
 
   // Boss SFX
   const bossHitSfx    = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/boss%20hit.mp3');
@@ -186,8 +187,8 @@
   function unlockAllAudioOnce(){
     if (__rrAudioPrimed) return;
     __rrAudioPrimed = true;
-    [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx].forEach(a => {
-      a.preload = 'auto'; primeAudio(a);
+   [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx, gameOverSound]
+  .forEach(a => { a.preload = 'auto'; primeAudio(a); });
     });
   }
   ['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
@@ -506,6 +507,10 @@
     img.src='https://github.com/FrogMallet/frogmallet.github.io/blob/main/GAME%20OVER.png?raw=true';
     Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
     document.body.appendChild(img);
+
+try { gameOverSound.currentTime = 0; gameOverSound.play().catch(()=>{}); } catch(e){}
+
+    
     const st=document.createElement('style'); st.textContent='@keyframes fadeOut{0%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}';
     document.head.appendChild(st);
     setTimeout(()=> img.remove(), 3000);

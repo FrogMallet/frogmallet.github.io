@@ -163,8 +163,38 @@
   const splatSound     = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/splat.mp3');
   const rampageSound   = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Ribbit%20Rampage.mp3');
   const decimatedSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Flies%20Decimated.mp3');
-  const gameOverSound = new Audio('https://github.com/FrogMallet/frogmallet.github.io/raw/refs/heads/main/Game%20Over.mp3');
+  
+function pickFirstWorkingAudio(sources){
+  const a = new Audio();
+  let i = 0;
+  function tryNext(){
+    if (i >= sources.length) { console.warn('[RR] No working Game Over audio source'); return; }
+    a.src = sources[i++];
+    a.load();
+    const onCanPlay = () => { 
+      a.removeEventListener('error', onError);
+      console.log('[RR] GameOver audio OK:', a.src);
+    };
+    const onError = () => {
+      a.removeEventListener('canplaythrough', onCanPlay);
+      console.warn('[RR] GameOver audio failed:', a.src);
+      tryNext();
+    };
+    a.addEventListener('canplaythrough', onCanPlay, { once: true });
+    a.addEventListener('error', onError, { once: true });
+  }
+  tryNext();
+  return a;
+}
+
+const gameOverSound = pickFirstWorkingAudio([
+  'https://frogmallet.github.io/Game%20Over.mp3',
+  'https://frogmallet.github.io/GAME%20OVER.mp3',
+  'https://cdn.jsdelivr.net/gh/FrogMallet/frogmallet.github.io@main/Game%20Over.mp3',
+  'https://cdn.jsdelivr.net/gh/FrogMallet/frogmallet.github.io@main/GAME%20OVER.mp3'
+]);
 gameOverSound.volume = 1.0;
+
 
 
   // Boss SFX

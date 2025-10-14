@@ -370,6 +370,13 @@ function ensureBossUI(){
       const fresh = old.cloneNode(true);
       old.parentNode.replaceChild(fresh, old);
       bossEl = fresh;
+      Object.assign(bossEl.style, {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%,-50%)',
+  pointerEvents: 'auto'
+});
     }
     bossEl.setAttribute('draggable','false');
     bossEl.style.pointerEvents = 'auto';
@@ -389,6 +396,13 @@ function ensureBossUI(){
     const now = performance.now();
     if (now - bossHitGateTS < 80) return;  // throttle multi-events per tap
     bossHitGateTS = now;
+// keep the boss locked to center before animating
+Object.assign(bossEl.style, {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%,-50%)'
+});
 
     // Start the centered countdown BAR on the first successful hit
     if (!bossCountdownRAF){

@@ -513,7 +513,13 @@ function unlockAllAudioOnce(){
     Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
     document.body.appendChild(img);
 
-try { gameOverSound.currentTime = 0; gameOverSound.play().catch(()=>{}); } catch(e){}
+try {
+  gameOverSound.currentTime = 0;
+  const p = gameOverSound.play();
+  if (p && p.catch) p.catch(err => console.warn('[RR] gameOverSound blocked/error:', err));
+} catch(e) {
+  console.warn('[RR] gameOverSound threw:', e);
+}
 
     
     const st=document.createElement('style'); st.textContent='@keyframes fadeOut{0%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}';

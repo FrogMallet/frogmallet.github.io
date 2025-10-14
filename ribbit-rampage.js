@@ -471,6 +471,29 @@ function bossHit(){
   // ...
 
   // --- Count this as a valid hit
+  // --- Start the countdown BAR on the very first successful hit
+if (!bossCountdownRAF){
+  const { bossCountdown, bossCountdownFill } = ensureBossUI();
+  const startTs = performance.now();
+
+  if (bossCountdown){ bossCountdown.style.display = 'block'; }
+  if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+
+  function tick(){
+    const elapsed = performance.now() - startTs;
+    const p = Math.max(0, 1 - (elapsed / BOSS_COUNTDOWN_MS)); // 1 -> 0 over the duration
+    if (bossCountdownFill){ bossCountdownFill.style.width = (p*100)+'%'; }
+
+    if (p <= 0){
+      bossCountdownRAF = null;
+      bossGameOver();
+      return;
+    }
+    bossCountdownRAF = requestAnimationFrame(tick);
+  }
+  bossCountdownRAF = requestAnimationFrame(tick);
+}
+
   bossHitCount++;
 
   // --- Apply damage

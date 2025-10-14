@@ -130,7 +130,7 @@ function ensureBossUI(){
     bossCountdown.id = 'boss-countdown';
     Object.assign(bossCountdown.style,{
       position:'absolute',
-      top:'52px',                     // just under #boss-health (which is at 20px + 22px height + ~10px gap)
+      top:'45px',                     // just under #boss-health (which is at 20px + 22px height + ~10px gap)
       left:'50%',
       transform:'translateX(-50%)',
       width:'min(90vw,600px)',        // EXACT same width rule as #boss-health

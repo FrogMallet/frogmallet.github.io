@@ -192,6 +192,35 @@ const bossOwSfx     = new Audio('https://github.com/FrogMallet/frogmallet.github
 bossHitSfx.volume = 1.0;
 bossRandomSfx.volume = 1.0;
 bossOwSfx.volume = 1.0;
+  // ---- ONE-TIME AUDIO PRIMER (fixes iOS/Chrome autoplay lock) ----
+function primeAudio(a){
+  try {
+    a.muted = true;        // ensure no audible blip while priming
+    const p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
+    } else {
+      a.pause(); a.currentTime = 0; a.muted = false;
+    }
+  } catch(e){ a.muted = false; }
+}
+
+let __rrAudioPrimed = false;
+function unlockAllAudioOnce(){
+  if (__rrAudioPrimed) return;
+  __rrAudioPrimed = true;
+
+  [splatSound, rampageSound, decimatedSound, bossHitSfx, bossRandomSfx, bossOwSfx].forEach(a => {
+    a.preload = 'auto';
+    primeAudio(a);
+  });
+}
+
+// First gesture anywhere unlocks audio on all browsers (incl. iOS)
+['pointerdown','touchstart','mousedown','click','keydown'].forEach(ev => {
+  window.addEventListener(ev, unlockAllAudioOnce, { once:true, passive:true, capture:true });
+});
+
 
 
   // ---------------- Helpers ----------------

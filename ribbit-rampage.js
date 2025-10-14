@@ -45,7 +45,7 @@
 
   // Countdown bar state (requestAnimationFrame loop)
   let bossCountdownRAF = null;
-  const BOSS_COUNTDOWN_MS = 10000; // 10s after first hit
+  const BOSS_COUNTDOWN_MS = 12000; // 10s after first hit
 
   const FROG_DELAY_MS = 3200;
 

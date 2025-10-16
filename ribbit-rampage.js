@@ -251,6 +251,22 @@
   }
   function formatTime(s){ const m = Math.floor(s/60), ss = String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
 
+  // ------- Highscore helpers -------
+function promptNameIfMissing() {
+  if (!window.FMHighscores) return; // safe no-op if not loaded
+  if (!window.FMHighscores.getName()) {
+    const n = prompt("Enter your name for the leaderboard:", "Anonymous Frog");
+    if (n) window.FMHighscores.setName(n);
+  }
+}
+function submitScore(outcome /* 'win' | 'loss' */) {
+  if (!window.FMHighscores) return;
+  // Simple scoring: number of flies squashed this run
+  const finalScore = flyKillCount;
+  window.FMHighscores.submit(finalScore, { mode: outcome, version: "1.0.0" });
+}
+
+
   // ---------------- Rampage Timer ----------------
   function startRampageTimer(){
     rampageActive = true;
@@ -512,48 +528,62 @@
     }
   }
 
-  function endBossFight(){
-    bossActive=false;
-    if (bossWrap) bossWrap.style.display='none';
-    showBanner('DECIMATED');
-    showGoldenFrogDelayed();
-    spawnAllowed=false;
+function endBossFight(){
+  bossActive=false;
+  if (bossWrap) bossWrap.style.display='none';
+  showBanner('DECIMATED');
+  showGoldenFrogDelayed();
+  spawnAllowed=false;
+
+  // [FM Leaderboard] on win:
+  promptNameIfMissing();
+  submitScore('win');
+  // Optional: auto-jump to the board after the banner finishes
+  // setTimeout(() => { location.href = "/pages/leaderboard"; }, 900);
+}
+
+
+  
+function bossGameOver(){
+  bossActive = false;
+
+  // stop/hide countdown bar
+  if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }
+  const { bossCountdown, bossCountdownFill } = ensureBossUI();
+  if (bossCountdown){ bossCountdown.style.display = 'none'; bossCountdown.style.opacity = '0'; }
+  if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+
+  if (bossWrap){
+    bossWrap.style.display='none';
+    bossWrap.setAttribute('aria-hidden','true');
+    bossWrap.style.pointerEvents='none';
+  }
+  const img=document.createElement('img');
+  img.src='https://frogmallet.github.io/GAME%20OVER.png';
+  Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
+  document.body.appendChild(img);
+
+  try {
+    gameOverSound.currentTime = 0;
+    const p = gameOverSound.play();
+    if (p && p.catch) p.catch(err => console.warn('[RR] gameOverSound blocked/error:', err));
+  } catch(e) {
+    console.warn('[RR] gameOverSound threw:', e);
   }
 
-  function bossGameOver(){
-    bossActive = false;
+  const st=document.createElement('style'); st.textContent='@keyframes fadeOut{0%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}';
+  document.head.appendChild(st);
+  setTimeout(()=> img.remove(), 3000);
+  spawnAllowed = false; // keep fail state until reload
+  console.log('[RR] GAME OVER — boss timer expired');
 
-    // stop/hide countdown bar
-    if (bossCountdownRAF){ cancelAnimationFrame(bossCountdownRAF); bossCountdownRAF = null; }
-    const { bossCountdown, bossCountdownFill } = ensureBossUI();
-    if (bossCountdown){ bossCountdown.style.display = 'none'; bossCountdown.style.opacity = '0'; }
-    if (bossCountdownFill){ bossCountdownFill.style.width = '100%'; }
+  // [FM Leaderboard] on loss:
+  promptNameIfMissing();
+  submitScore('loss');
+  // Optional: auto-jump to the board after the sound/banner
+  // setTimeout(() => { location.href = "/pages/leaderboard"; }, 1200);
+}
 
-    if (bossWrap){
-      bossWrap.style.display='none';
-      bossWrap.setAttribute('aria-hidden','true');
-      bossWrap.style.pointerEvents='none';
-    }
-    const img=document.createElement('img');
-    // Use Pages (case sensitive: match your repo filename exactly)
-    img.src='https://frogmallet.github.io/GAME%20OVER.png';
-    Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
-    document.body.appendChild(img);
-
-    try {
-      gameOverSound.currentTime = 0;
-      const p = gameOverSound.play();
-      if (p && p.catch) p.catch(err => console.warn('[RR] gameOverSound blocked/error:', err));
-    } catch(e) {
-      console.warn('[RR] gameOverSound threw:', e);
-    }
-
-    const st=document.createElement('style'); st.textContent='@keyframes fadeOut{0%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}';
-    document.head.appendChild(st);
-    setTimeout(()=> img.remove(), 3000);
-    spawnAllowed = false; // keep fail state until reload
-    console.log('[RR] GAME OVER — boss timer expired');
-  }
 
   // Prevent the golden frog from hijacking clicks
   if (frogEl) frogEl.addEventListener('click', e=> e.preventDefault());

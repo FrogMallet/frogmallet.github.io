@@ -538,6 +538,9 @@ function endBossFight(){
   // [FM Leaderboard] on win:
   promptNameIfMissing();
   submitScore('win');
+  Leaderboard.submitScore({ name: "Test", score: 42 });
+
+  
   // Optional: auto-jump to the board after the banner finishes
   // setTimeout(() => { location.href = "/pages/leaderboard"; }, 900);
 }
@@ -580,6 +583,8 @@ function bossGameOver(){
   // [FM Leaderboard] on loss:
   promptNameIfMissing();
   submitScore('loss');
+  Leaderboard.submitScore({ name: "Test", score: 42 });
+
   // Optional: auto-jump to the board after the sound/banner
   // setTimeout(() => { location.href = "/pages/leaderboard"; }, 1200);
 }

@@ -207,3 +207,4 @@ window.addEventListener('keydown', e=>{
   // ---------------- Boot ----------------
   setCounterText('Flies Squashed: 0');
   createFly();
+  })();

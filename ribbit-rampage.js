@@ -600,7 +600,7 @@ function bossGameOver(){
   if (frogEl) frogEl.addEventListener('click', e=> e.preventDefault());
 
   // ---------------- Hotkeys ----------------
-  window.addEventListener('keydown', e=>{
+ /* window.addEventListener('keydown', e=>{
     const key = (e.key||'').toLowerCase();
     if (key !== 'k') return;
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
@@ -645,7 +645,7 @@ function bossGameOver(){
     if (typeof window.startBossFight === 'function') window.startBossFight();
     else try { startBossFight(); } catch(_) {}
   }, true);
-
+*/
   // ---------------- Boot ----------------
   setCounterText('Flies Squashed: 0');
   if (bossWrap) bossWrap.style.pointerEvents = 'none';

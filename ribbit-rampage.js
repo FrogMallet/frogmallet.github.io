@@ -568,7 +568,7 @@ function bossGameOver(){
   window.dispatchEvent(new CustomEvent('ribbit:gameover', { detail: { score: flyKillCount, outcome: 'loss' } }));
 
   const img=document.createElement('img');
-  img.src='https://frogmallet.github.io/GAME%20OVER.png';
+img.src='https://raw.githubusercontent.com/FrogMallet/frogmallet.github.io/main/Game%20Over.png';
   Object.assign(img.style,{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(90vw,600px)',height:'auto',zIndex:10005,pointerEvents:'none',animation:'fadeOut 3s forwards'});
   document.body.appendChild(img);
 

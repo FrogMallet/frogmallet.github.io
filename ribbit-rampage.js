@@ -6,13 +6,6 @@
     window.RIBBIT_ENABLE_LEADERBOARD = false;
 */
 
-<script>
-  window.RIBBIT_ENABLE_BOSS = false;
-  window.RIBBIT_ENABLE_LEADERBOARD = false;
-</script>
-
-<script src="https://frogmallet.github.io/ribbit-rampage.js"></script>
-
 (() => {
   if (window.__ribbitRampageActive) return;
   window.__ribbitRampageActive = true;
@@ -187,24 +180,29 @@
     window.FMHighscores.submit(score,{mode:outcome,version:"1.0.0"});
   }
 
-  // ---------------- Keyboard shortcuts ----------------
-  window.addEventListener('keydown', e=>{
-    const key=(e.key||'').toLowerCase();
-    if(key==='k'){
-      e.preventDefault();
-      const flies=document.querySelectorAll('.fly:not(.splatted)');
-      flies.forEach(f=>{
-        f.classList.add('splatted');
-        f.style.backgroundImage="url('https://frogmallet.github.io/splat.png')";
-        setTimeout(()=>f.remove(),200);
-      });
-      registerKill(flies.length);
-    }
-    if(key==='b' && window.RIBBIT_ENABLE_BOSS){
-      e.preventDefault();
-      startBossFight();
-    }
-  },true);
+// ---------------- Keyboard shortcuts ----------------
+window.addEventListener('keydown', e=>{
+  const key=(e.key||'').toLowerCase();
+
+  // "K" key — mass kill toggleable (optional)
+  if(key==='k' && window.RIBBIT_ENABLE_BOSS){
+    e.preventDefault();
+    const flies=document.querySelectorAll('.fly:not(.splatted)');
+    flies.forEach(f=>{
+      f.classList.add('splatted');
+      f.style.backgroundImage="url('https://frogmallet.github.io/splat.png')";
+      setTimeout(()=>f.remove(),200);
+    });
+    registerKill(flies.length);
+  }
+
+  // "B" key — boss toggleable
+  if(key==='b' && window.RIBBIT_ENABLE_BOSS){
+    e.preventDefault();
+    startBossFight();
+  }
+},true);
+
 
   // ---------------- Boot ----------------
   setCounterText('Flies Squashed: 0');

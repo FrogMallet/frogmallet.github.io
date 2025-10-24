@@ -451,7 +451,7 @@ function submitScore(outcome /* 'win' | 'loss' */) {
     window.startBossFight = startBossFight;
     console.log('[RR] Boss started — HP', bossHP, '/', bossHPMax);
   }
-  window.startBossFight = startBossFight;
+//  window.startBossFight = startBossFight;
 
   function bossHit(){
     if (!bossActive) return;
@@ -541,7 +541,7 @@ function endBossFight(){
   // [FM Leaderboard] on win:
   promptNameIfMissing();
   submitScore('win');
-  Leaderboard.submitScore({ name: "Test", score: 42 });
+//  Leaderboard.submitScore({ name: "Test", score: 42 });
 
   
   // Optional: auto-jump to the board after the banner finishes

@@ -6,6 +6,13 @@
     window.RIBBIT_ENABLE_LEADERBOARD = false;
 */
 
+<script>
+  window.RIBBIT_ENABLE_BOSS = false;
+  window.RIBBIT_ENABLE_LEADERBOARD = false;
+</script>
+
+<script src="https://frogmallet.github.io/ribbit-rampage.js"></script>
+
 (() => {
   if (window.__ribbitRampageActive) return;
   window.__ribbitRampageActive = true;

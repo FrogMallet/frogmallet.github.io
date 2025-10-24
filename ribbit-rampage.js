@@ -1,13 +1,18 @@
 /*
-  Ribbit Rampage — Live Build (Toggleable Leaderboard & Boss)
-  -----------------------------------------------------------
-  All original logic preserved; leaderboard + boss spawn/kill
-  lines are commented out for now.
+  Ribbit Rampage — Toggleable Build
+  ---------------------------------
+  Set these at the top:
+    window.RIBBIT_ENABLE_BOSS = false;
+    window.RIBBIT_ENABLE_LEADERBOARD = false;
 */
 
 (() => {
   if (window.__ribbitRampageActive) return;
   window.__ribbitRampageActive = true;
+
+  // === Toggles ===
+  window.RIBBIT_ENABLE_BOSS = window.RIBBIT_ENABLE_BOSS ?? false;
+  window.RIBBIT_ENABLE_LEADERBOARD = window.RIBBIT_ENABLE_LEADERBOARD ?? false;
 
   // ---------------- State ----------------
   let flyKillCount = 0;
@@ -38,7 +43,6 @@
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const rand = (a,b)=> a + Math.random()*(b-a);
   const clamp = (v,min,max)=> Math.min(Math.max(v,min),max);
-  const hsl = (h,s,l)=>`hsl(${h} ${s}% ${l}%)`;
 
   // ---------------- Audio ----------------
   const splatSound = new Audio('https://frogmallet.github.io/splat.mp3');
@@ -77,6 +81,128 @@
     fly.style.width=w+'px'; fly.style.height=h+'px';
     fly.style.left=rand(50,innerWidth-50)+'px';
     fly.style.top=rand(50,innerHeight-50)+'px';
+    flyContainer.appendChild(fly);
+
+    const move=setInterval(()=>{
+      if(fly.classList.contains('splatted')||bossActive){clearInterval(move);return;}
+      const dx=(Math.random()-.5)*40,dy=(Math.random()-.5)*40;
+      const nx=clamp(parseFloat(fly.style.left)+dx,0,innerWidth-w);
+      const ny=clamp(parseFloat(fly.style.top)+dy,0,innerHeight-h);
+      fly.style.left=nx+'px';fly.style.top=ny+'px';
+    },1200);
+
+    fly.addEventListener('click',()=>{
+      if(fly.dataset.splatted==='1')return;
+      splatSound.currentTime=0;splatSound.play().catch(()=>{});
+      fly.classList.add('splatted');fly.dataset.splatted='1';
+      fly.style.backgroundImage="url('https://frogmallet.github.io/splat.png')";
+      setTimeout(()=>fly.remove(),2000);
+      registerKill(1);
+    });
+  }
+
+  function spawnFlies(){
+    if(!postFirstKill||!spawnAllowed||bossActive)return;
+    const alive=document.querySelectorAll('.fly:not(.splatted)').length;
+    if(flyKillCount<10&&alive>=10)return;
+    createFly();
+    setTimeout(spawnFlies,5000*spawnRateMultiplier);
+  }
+
+  // ---------------- Game progression ----------------
+  function registerKill(n=1){
+    const prev=flyKillCount;
+    flyKillCount+=n;
+    updateCounter();
+    if(prev===0) counterNodes.forEach(el=> el.style.display='block');
+    handleMilestones(prev);
+  }
+
+  function handleMilestones(prev){
+    if(prev<1&&flyKillCount>=1&&!postFirstKill){
+      postFirstKill=true; spawnFlies();
+    }
+    if(prev<10&&flyKillCount>=10&&!rampageActive){
+      spawnRateMultiplier=.1; showBanner('RAMPAGE');
+      rampageActive=true; spawnFlies();
+    }
+    if(prev<100&&flyKillCount>=100){
+      if(window.RIBBIT_ENABLE_BOSS){
+        startBossFight();
+      } else {
+        showBanner('DECIMATED');
+      }
+    }
+  }
+
+  // ---------------- Boss ----------------
+  function startBossFight(){
+    if(!window.RIBBIT_ENABLE_BOSS) return;
+    bossActive=true;
+    bossHP=bossHPMax;
+    bossWrap.style.display='block';
+    healthFill.style.width='100%';
+    console.log('[RR] Boss started — HP',bossHP,'/',bossHPMax);
+  }
+
+  function bossHit(){
+    if(!window.RIBBIT_ENABLE_BOSS||!bossActive)return;
+    const now=performance.now();
+    if(now-bossHitGateTS<120)return;
+    bossHitGateTS=now;
+    bossHP-=BOSS_DAMAGE_PER_HIT;
+    const pct=clamp(bossHP/bossHPMax,0,1);
+    healthFill.style.width=`${pct*100}%`;
+    bossEl.classList.add('boss-hit');
+    setTimeout(()=>bossEl.classList.remove('boss-hit'),180);
+    if(bossHP<=0) endBossFight();
+  }
+
+  function endBossFight(){
+    if(!window.RIBBIT_ENABLE_BOSS)return;
+    bossActive=false;
+    bossWrap.style.display='none';
+    showBanner('DECIMATED');
+  }
+
+  function bossGameOver(){
+    if(!window.RIBBIT_ENABLE_BOSS)return;
+    bossActive=false;
+    bossWrap.style.display='none';
+    gameOverSound.play().catch(()=>{});
+  }
+
+  // ---------------- Leaderboard ----------------
+  function maybeSubmitScore(outcome){
+    if(!window.RIBBIT_ENABLE_LEADERBOARD)return;
+    if(typeof window.FMHighscores==='undefined')return;
+    const score=flyKillCount;
+    window.FMHighscores.submit(score,{mode:outcome,version:"1.0.0"});
+  }
+
+  // ---------------- Keyboard shortcuts ----------------
+  window.addEventListener('keydown', e=>{
+    const key=(e.key||'').toLowerCase();
+    if(key==='k'){
+      e.preventDefault();
+      const flies=document.querySelectorAll('.fly:not(.splatted)');
+      flies.forEach(f=>{
+        f.classList.add('splatted');
+        f.style.backgroundImage="url('https://frogmallet.github.io/splat.png')";
+        setTimeout(()=>f.remove(),200);
+      });
+      registerKill(flies.length);
+    }
+    if(key==='b' && window.RIBBIT_ENABLE_BOSS){
+      e.preventDefault();
+      startBossFight();
+    }
+  },true);
+
+  // ---------------- Boot ----------------
+  setCounterText('Flies Squashed: 0');
+  createFly();
+})();
     flyContainer.appendChild(fly);
 
     const move=setInterval(()=>{
